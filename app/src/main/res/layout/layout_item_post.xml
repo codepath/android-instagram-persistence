@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        android:id="@+id/llHeader"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:orientation="horizontal"
+        android:paddingTop="10dp"
+        android:paddingBottom="10dp"
+        android:paddingLeft="14dp"
+        android:paddingRight="14dp">
+
+    <com.facebook.drawee.view.SimpleDraweeView
+            android:id="@+id/sdvProfileImage"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_gravity="center_vertical"
+            app:actualImageScaleType="fitCenter"
+            app:placeholderImage="@drawable/gray_oval"
+            app:roundAsCircle="true"/>
+
+    <TextView
+            android:id="@+id/tvUserName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:fontFamily="sans-serif-medium"
+            android:textColor="@color/blue_text"
+            android:layout_marginLeft="8dp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:text="UserName"
+            android:textSize="14sp"/>
+
+    <TextView
+            android:id="@+id/tvRelativeTimestamp"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:layout_weight="1"
+            android:textColor="@color/light_gray_text"
+            android:ellipsize="end"
+            android:gravity="end"
+            android:maxLines="1"
+            android:text="10m"
+            android:fontFamily="sans-serif"
+            android:textSize="14sp"/>
+
+</LinearLayout>
