@@ -9,19 +9,19 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.widget.Toast;
+
 import com.codepath.persistencedemo.R;
 import com.codepath.persistencedemo.adapters.InstagramPostsAdapter;
 import com.codepath.persistencedemo.helpers.Utils;
 import com.codepath.persistencedemo.models.InstagramPost;
 import com.codepath.persistencedemo.networking.InstagramClient;
-import com.codepath.persistencedemo.persistence.InstagramClientDatabase;
 import com.loopj.android.http.JsonHttpResponseHandler;
+
 import org.apache.http.Header;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
-
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
@@ -30,7 +30,6 @@ public class MainActivity extends AppCompatActivity {
     private InstagramPostsAdapter postsAdapter;
 
     RecyclerView rvInstagramPosts;
-    InstagramClientDatabase database;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,14 +41,11 @@ public class MainActivity extends AppCompatActivity {
                 LinearLayoutManager.VERTICAL, false);
         rvInstagramPosts.setLayoutManager(layoutManager);
 
-        database = new InstagramClientDatabase(this);
-
         posts = new ArrayList<>();
         postsAdapter = new InstagramPostsAdapter(posts);
 
         rvInstagramPosts.setAdapter(postsAdapter);
         fetchPopularPosts();
-
     }
 
     private void fetchPopularPosts() {
@@ -57,24 +53,8 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, getString(R.string.network_available_toast), Toast.LENGTH_LONG).show();
             fetchPopularPostsFromInstagramApi();
         } else {
-            Toast.makeText(this, getString(R.string.network_unavailable_toast), Toast.LENGTH_LONG).show();
-            fetchPopularPostsFromCache();
+            // TODO: Implement the offline scenario
         }
-    }
-
-    // should be done off UI thread
-    private void fetchPopularPostsFromCache() {
-
-        posts.clear();
-        posts.addAll(database.getAllInstagramPosts());
-        postsAdapter.notifyDataSetChanged();
-    }
-
-    // Full refresh of cache
-    // should be done off UI thread
-    private void putPopularPostsInCache(List<InstagramPost> posts) {
-        database.emptyAllTables();
-        database.addInstagramPosts(posts);
     }
 
     private void fetchPopularPostsFromInstagramApi() {
@@ -86,8 +66,6 @@ public class MainActivity extends AppCompatActivity {
                 List<InstagramPost> newPosts = Utils.decodePostsFromJsonResponse(response);
                 posts.addAll(newPosts);
                 postsAdapter.notifyDataSetChanged();
-
-                putPopularPostsInCache(newPosts);
             }
 
             @Override

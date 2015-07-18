@@ -6,15 +6,14 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
+
 import com.codepath.persistencedemo.models.InstagramPost;
 import com.codepath.persistencedemo.models.InstagramUser;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class InstagramClientDatabase extends SQLiteOpenHelper {
     private static final String TAG = "InstagramClientDatabase";
-
 
     // Constants
     private static final String DATABASE_NAME = "instagramClientDatabase";
@@ -25,7 +24,6 @@ public class InstagramClientDatabase extends SQLiteOpenHelper {
 
     // Posts table columns
     private static final String KEY_POST_ID = "id";
-    private static final String KEY_POST_MEDIA_ID = "mediaId";
     private static final String KEY_POST_USER_ID_FK = "userId";
     private static final String KEY_POST_CREATED_TIME = "createdTime";
 
@@ -33,47 +31,46 @@ public class InstagramClientDatabase extends SQLiteOpenHelper {
     private static final String KEY_USER_ID = "id";
     private static final String KEY_USER_NAME = "userName";
     private static final String KEY_USER_PROFILE_PICTURE_URL = "profilePictureUrl";
-    // SQLiteOpenHelper methods
+
+    private static String CREATE_POSTS_TABLE = "CREATE TABLE " + TABLE_POSTS +
+            "(" +
+            KEY_POST_ID + " INTEGER PRIMARY KEY," +
+            KEY_POST_USER_ID_FK + " INTEGER REFERENCES " + TABLE_USERS + "," +
+            KEY_POST_CREATED_TIME + " INTEGER" +
+            ")";
+
+    private static String CREATE_USERS_TABLE = "CREATE TABLE " + TABLE_USERS +
+            "(" +
+            KEY_USER_ID + " INTEGER PRIMARY KEY," +
+            KEY_USER_NAME + " TEXT," +
+            KEY_USER_PROFILE_PICTURE_URL + " TEXT" +
+            ")";
+
+    /*   SELECT * FROM POSTS
+     *   LEFT OUTER JOIN USERS
+     *   ON POSTS.KEY_POST_USER_ID_FK = USERS.KEY_USER_ID
+     */
+    private static String POSTS_SELECT_QUERY =
+            String.format("SELECT * FROM %s LEFT OUTER JOIN %s ON %s.%s = %s.%s",
+                    TABLE_POSTS,
+                    TABLE_USERS,
+                    TABLE_POSTS, KEY_POST_USER_ID_FK,
+                    TABLE_USERS, KEY_USER_ID);
+
     public InstagramClientDatabase(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
     }
 
     @Override
     public void onCreate(SQLiteDatabase db) {
-        String CREATE_POSTS_TABLE = "CREATE TABLE " + TABLE_POSTS +
-                "(" +
-                KEY_POST_ID + " INTEGER PRIMARY KEY," +
-                KEY_POST_MEDIA_ID + " TEXT," +
-                KEY_POST_USER_ID_FK + " INTEGER REFERENCES " + TABLE_USERS + "," +
-                KEY_POST_CREATED_TIME + " INTEGER" +
-                ")";
-
-        String CREATE_USERS_TABLE = "CREATE TABLE " + TABLE_USERS +
-                "(" +
-                KEY_USER_ID + " INTEGER PRIMARY KEY," +
-                KEY_USER_NAME + " TEXT," +
-                KEY_USER_PROFILE_PICTURE_URL + " TEXT" +
-                ")";
-
-        db.execSQL(CREATE_USERS_TABLE);
-        db.execSQL(CREATE_POSTS_TABLE);
+        // TODO: Implement this method
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        // On version change wipe old data and start new
-        if (oldVersion != newVersion) {
-            db.execSQL("DROP TABLE IF EXISTS " + TABLE_POSTS);
-            db.execSQL("DROP TABLE IF EXISTS " + TABLE_USERS);
-            onCreate(db);
-        }
+        // TODO: Implement this method
     }
 
-    @Override
-    public void onConfigure(SQLiteDatabase db) {
-        super.onConfigure(db);
-        db.setForeignKeyConstraintsEnabled(true);
-    }
     // Create methods
     public void addInstagramPosts(List<InstagramPost> posts) {
         if (posts == null) {
@@ -85,11 +82,9 @@ public class InstagramClientDatabase extends SQLiteOpenHelper {
         db.beginTransaction();
         try {
             for (InstagramPost post : posts) {
-                // Problem: Need to check if user already exists
-                long userId = addUser(post.user, db);
+                long userId = addUser(post.user);
 
                 ContentValues values = new ContentValues();
-                values.put(KEY_POST_MEDIA_ID, post.mediaId);
                 values.put(KEY_POST_USER_ID_FK, userId);
                 values.put(KEY_POST_CREATED_TIME, post.createdTime);
 
@@ -101,86 +96,48 @@ public class InstagramClientDatabase extends SQLiteOpenHelper {
             e.printStackTrace();
         } finally {
             db.endTransaction();
-            closeDatabase(db);
         }
     }
 
-    private long addUser(InstagramUser user, SQLiteDatabase writeableDb) {
+    private long addUser(InstagramUser user) {
         if (user == null) {
             throw new IllegalArgumentException(String.format("Attemping to add a null user to %s", DATABASE_NAME));
         }
+        SQLiteDatabase db = getWritableDatabase();
 
         ContentValues values = new ContentValues();
         values.put(KEY_USER_NAME, user.userName);
         values.put(KEY_USER_PROFILE_PICTURE_URL, user.profilePictureUrl);
 
-        return writeableDb.insert(TABLE_USERS, null, values);
+        return db.insert(TABLE_USERS, null, values);
     }
 
-    // Read methods
-
+    // Read method
     public List<InstagramPost> getAllInstagramPosts() {
-        List<InstagramPost> posts = new ArrayList<>();
-
-        /*   SELECT * FROM TABLE_POSTS
-         *   LEFT OUTER JOIN TABLE_USERS
-         *   ON TABLE_POSTS.KEY_POST_USER_ID_FK = TABLE_USERS.KEY_USER_ID
-         */
-
-        String userJoin = String.format("LEFT OUTER JOIN %s ON %s.%s = %s.%s",
-                TABLE_USERS,
-                TABLE_POSTS, KEY_POST_USER_ID_FK,
-                TABLE_USERS, KEY_USER_ID);
-
-        String postsSelectQuery = "SELECT * FROM " + TABLE_POSTS + " " + userJoin;
-
-        SQLiteDatabase db = this.getReadableDatabase();
-        Cursor cursor = db.rawQuery(postsSelectQuery, null);
-
-        try {
-            if (cursor.moveToFirst()) {
-                do {
-                    InstagramPost post = new InstagramPost();
-                    post.mediaId = cursor.getString(cursor.getColumnIndexOrThrow(KEY_POST_MEDIA_ID));
-                    post.createdTime = cursor.getLong(cursor.getColumnIndexOrThrow(KEY_POST_CREATED_TIME));
-
-                    InstagramUser user = new InstagramUser();
-                    user.userName = cursor.getString(cursor.getColumnIndexOrThrow(KEY_USER_NAME));
-                    user.profilePictureUrl = cursor.getString(cursor.getColumnIndexOrThrow(KEY_USER_PROFILE_PICTURE_URL));
-                    post.user = user;
-
-                    posts.add(post);
-                } while (cursor.moveToNext());
-            }
-        } catch (Exception e) {
-            Log.wtf(TAG, "Error while trying to get posts from database");
-            e.printStackTrace();
-        } finally {
-            closeCursor(cursor);
-            closeDatabase(db);
-        }
-        return posts;
+        // TODO: Implement this method
+        return null;
     }
-    // Delete methods
 
+    // Delete method
     public void emptyAllTables() {
         SQLiteDatabase db = getWritableDatabase();
-
-        db.delete(TABLE_POSTS, null, null);
-        db.delete(TABLE_USERS, null, null);
-
-        closeDatabase(db);
+        db.beginTransaction();
+        try {
+            db.delete(TABLE_POSTS, null, null);
+            db.delete(TABLE_USERS, null, null);
+            db.setTransactionSuccessful();
+        } catch (Exception e) {
+            Log.wtf(TAG, "Error while trying to empty all tables in database");
+            e.printStackTrace();
+        } finally {
+            db.endTransaction();
+        }
     }
-    // Helper methods
+
+    // Helper method
     public void closeCursor(Cursor cursor) {
         if (cursor != null && !cursor.isClosed()) {
             cursor.close();
-        }
-    }
-
-    public void closeDatabase(SQLiteDatabase db) {
-        if (db != null && db.isOpen()) {
-            db.close();
         }
     }
 }
