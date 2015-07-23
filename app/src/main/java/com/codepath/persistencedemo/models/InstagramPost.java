@@ -9,7 +9,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class InstagramPost implements Serializable {
-    public String mediaId;
     public InstagramUser user;
     public long createdTime;
 
@@ -21,7 +20,6 @@ public class InstagramPost implements Serializable {
         InstagramPost post = new InstagramPost();
 
         try {
-            post.mediaId = jsonObject.getString("id");
             post.user = InstagramUser.fromJson(jsonObject.getJSONObject("user"));
             post.createdTime = jsonObject.getLong("created_time");
         } catch (JSONException e) {

@@ -57,8 +57,31 @@ public class InstagramClientDatabase extends SQLiteOpenHelper {
                     TABLE_POSTS, KEY_POST_USER_ID_FK,
                     TABLE_USERS, KEY_USER_ID);
 
-    public InstagramClientDatabase(Context context) {
+    // Singleton instance
+    private static InstagramClientDatabase sInstance;
+
+    /**
+     * Constructor should be private to prevent direct instantiation.
+     * make call to static method "getInstance()" instead.
+     */
+    private InstagramClientDatabase(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
+    }
+
+    public static synchronized InstagramClientDatabase getInstance(Context context) {
+        if (sInstance == null) {
+            // Use the application context, which will ensure that you
+            // don't accidentally leak an Activity's context.
+            // See this article for more information: http://bit.ly/6LRzfx
+            sInstance = new InstagramClientDatabase(context.getApplicationContext());
+        }
+        return sInstance;
+    }
+
+    @Override
+    public void onConfigure(SQLiteDatabase db) {
+        super.onConfigure(db);
+        // TODO: Implement this method
     }
 
     @Override
