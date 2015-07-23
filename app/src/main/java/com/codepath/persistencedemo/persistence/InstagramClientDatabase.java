@@ -10,6 +10,7 @@ import android.util.Log;
 import com.codepath.persistencedemo.models.InstagramPost;
 import com.codepath.persistencedemo.models.InstagramUser;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class InstagramClientDatabase extends SQLiteOpenHelper {
@@ -81,17 +82,22 @@ public class InstagramClientDatabase extends SQLiteOpenHelper {
     @Override
     public void onConfigure(SQLiteDatabase db) {
         super.onConfigure(db);
-        // TODO: Implement this method
+        db.setForeignKeyConstraintsEnabled(true);
     }
 
     @Override
     public void onCreate(SQLiteDatabase db) {
-        // TODO: Implement this method
+        db.execSQL(CREATE_POSTS_TABLE);
+        db.execSQL(CREATE_USERS_TABLE);
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        // TODO: Implement this method
+        if (oldVersion != newVersion) {
+            db.execSQL("DROP TABLE IF EXISTS " + TABLE_POSTS);
+            db.execSQL("DROP TABLE IF EXISTS " + TABLE_USERS);
+            onCreate(db);
+        }
     }
 
     // Create methods
@@ -137,8 +143,31 @@ public class InstagramClientDatabase extends SQLiteOpenHelper {
 
     // Read method
     public List<InstagramPost> getAllInstagramPosts() {
-        // TODO: Implement this method
-        return null;
+        List<InstagramPost> posts = new ArrayList<>();
+
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor cursor = db.rawQuery(POSTS_SELECT_QUERY, null);
+        try {
+            if (cursor.moveToFirst()) {
+                do {
+                    InstagramUser newUser = new InstagramUser();
+                    newUser.userName = cursor.getString(cursor.getColumnIndex(KEY_USER_NAME));
+                    newUser.profilePictureUrl = cursor.getString(cursor.getColumnIndex(KEY_USER_PROFILE_PICTURE_URL));
+
+                    InstagramPost newPost = new InstagramPost();
+                    newPost.createdTime = cursor.getLong(cursor.getColumnIndex(KEY_POST_CREATED_TIME));
+                    newPost.user = newUser;
+                    posts.add(newPost);
+                } while(cursor.moveToNext());
+            }
+        } catch (Exception e) {
+            Log.wtf(TAG, "Error while trying to get posts from database");
+            e.printStackTrace();
+        } finally {
+            closeCursor(cursor);
+        }
+
+        return posts;
     }
 
     // Delete method
